@@ -22,7 +22,7 @@ export default async function Page() {
         Dashboard
       </h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Suspense fallback={[...Array(4)].map(() => <CardSkeleton />)}>
+        <Suspense fallback={[...Array(4)].map((_, i) => <CardSkeleton key={i} />)}>
           <CardWrapper />
         </Suspense>
       </div>
