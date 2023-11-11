@@ -1,5 +1,6 @@
 'use server';
 
+import { signIn } from "@/auth";
 import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,7 +13,7 @@ const InvoiceSchema = z.object({
   }),
   amount: z.coerce
     .number()
-    .gt(0, {message: "Please enter an amount greater than 0$"}),
+    .gt(0, { message: "Please enter an amount greater than 0$" }),
   status: z.enum(['pending', 'paid'], {
     invalid_type_error: 'Please select an invoice status'
   }),
@@ -22,12 +23,12 @@ const InvoiceSchema = z.object({
 const CreateInvoice = InvoiceSchema.omit({ id: true, date: true })
 
 export type State = {
-  errors? : {
-    customerId? : string[];
-    amount? : string[];
-    status? : string[];
+  errors?: {
+    customerId?: string[];
+    amount?: string[];
+    status?: string[];
   };
-  message? : string | null
+  message?: string | null
 }
 
 export async function createInvoice(_: State, formData: FormData) {
@@ -38,13 +39,13 @@ export async function createInvoice(_: State, formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    return  {
+    return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Missing Fields. Failed to Create Invoice"
     }
   }
 
-  const {customerId, amount, status} = validatedFields.data
+  const { customerId, amount, status } = validatedFields.data
 
   const amountInCents = amount * 100
   const date = new Date().toISOString().split('T')[0]
@@ -67,7 +68,7 @@ export async function createInvoice(_: State, formData: FormData) {
 const UpdateInvoice = InvoiceSchema.omit({ date: true, id: true })
 
 export async function updateInvoice(
-  id: string, 
+  id: string,
   _: State,
   formData: FormData
 ) {
@@ -84,7 +85,7 @@ export async function updateInvoice(
     }
   }
 
-  const {customerId, amount, status} = validatedFields.data
+  const { customerId, amount, status } = validatedFields.data
   const amountInCents = amount * 100
 
   try {
@@ -113,4 +114,18 @@ export async function deleteInvoice(id: string) {
     }
   }
   revalidatePath('dashboard/invoices')
+}
+
+export async function authenticate(
+  _: string | undefined,
+  formData: FormData
+) {
+  try { 
+    await signIn('credentials', Object.fromEntries(formData))
+  } catch (e) {
+    if ((e as Error).message.includes('CredentialSignin')) {
+      return 'CredentialSignin'
+    }
+    throw e
+  }
 }
